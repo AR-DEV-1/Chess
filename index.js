@@ -1,3 +1,8 @@
+// Variables for timers
+let whiteTime = 300; // 5 minutes
+let blackTime = 300;
+let intervalId;
+
 const board = document.getElementById("chess-board");
 const statusDisplay = document.getElementById("status");
 
@@ -12,7 +17,7 @@ const initialBoardSetup = [
     ["♖", "♘", "♗", "♕", "♔", "♗", "♘", "♖"]
 ];
 
-let turn = "black"; // "white" or "black"
+let turn = "white"; // "white" or "black"
 let selectedPiece = null;
 let selectedSquare = null;
 let validMoves = [];
@@ -40,6 +45,7 @@ function createChessBoard() {
             board.appendChild(square);
         }
     }
+    updateTimers();
 }
 
 function handleSquareClick(event) {
@@ -100,8 +106,10 @@ function movePiece(row, col) {
         // Check for game-ending conditions
         if (isCheckmate()) {
             statusDisplay.innerText = `Checkmate! ${turn === 'white' ? 'Black' : 'White'} wins!`;
+            clearInterval(intervalId); // Stop the timer on game over
         } else if (isStalemate()) {
             statusDisplay.innerText = "Stalemate! It's a draw.";
+            clearInterval(intervalId); // Stop the timer on game over
         } else {
             switchTurn();
         }
@@ -111,6 +119,43 @@ function movePiece(row, col) {
 function switchTurn() {
     turn = (turn === "white") ? "black" : "white";
     statusDisplay.innerText = `Turn: ${turn}`;
+    
+    // Reset the timer when the turn switches
+    resetTimers();
+
+    if (turn === "black") {
+        // AI makes a move
+        setTimeout(aiMove, 500); // Small delay to simulate thinking
+    }
+}
+
+function aiMove() {
+    const allMoves = getAllPossibleMoves("black");
+    if (allMoves.length > 0) {
+        const randomMove = allMoves[Math.floor(Math.random() * allMoves.length)];
+        movePiece(randomMove.row, randomMove.col);
+    }
+}
+
+function getAllPossibleMoves(color) {
+    let moves = [];
+    const pieces = document.querySelectorAll('.piece');
+    
+    pieces.forEach(piece => {
+        const pieceColor = getPieceColor(piece.innerHTML);
+        if (pieceColor === color) {
+            const square = piece.closest('.square');
+            const row = parseInt(square.dataset.row);
+            const col = parseInt(square.dataset.col);
+            const validMoves = calculateValidMoves(square);
+            
+            validMoves.forEach(move => {
+                moves.push({ ...move, row: row, col: col });
+            });
+        }
+    });
+
+    return moves;
 }
 
 function calculateValidMoves(square) {
@@ -118,7 +163,6 @@ function calculateValidMoves(square) {
     const col = parseInt(square.dataset.col);
     const piece = square.querySelector('.piece').innerHTML;
 
-    // Implement move logic for each piece type (pawn, rook, knight, etc.)
     let moves = [];
 
     switch (piece) {
@@ -128,42 +172,153 @@ function calculateValidMoves(square) {
         case "♟":
             moves = calculatePawnMoves(row, col, "black");
             break;
-        // Add other pieces here (♖, ♜, ♘, ♞, etc.)
+        case "♖":
+        case "♜":
+            moves = calculateRookMoves(row, col);
+            break;
+        case "♘":
+        case "♞":
+            moves = calculateKnightMoves(row, col);
+            break;
+        case "♗":
+        case "♝":
+            moves = calculateBishopMoves(row, col);
+            break;
+        case "♕":
+        case "♛":
+            moves = calculateQueenMoves(row, col);
+            break;
+        case "♔":
+        case "♚":
+            moves = calculateKingMoves(row, col);
+            break;
     }
 
     return moves.filter(move => !wouldCauseCheck(move));
 }
 
-function highlightValidMoves(moves) {
-    moves.forEach(move => {
-        const square = getSquare(move.row, move.col);
-        square.classList.add('valid-move');
-    });
-}
+// Piece movement logic functions
 
-function clearValidMoveHighlights() {
-    const highlightedSquares = document.querySelectorAll('.valid-move');
-    highlightedSquares.forEach(square => square.classList.remove('valid-move'));
-}
-
-function getSquare(row, col) {
-    return board.querySelector(`.square[data-row="${row}"][data-col="${col}"]`);
-}
-
-function getPieceColor(piece) {
-    return ["♙", "♖", "♘", "♗", "♕", "♔"].includes(piece) ? "white" : "black";
-}
-
+// PAWN MOVEMENT
 function calculatePawnMoves(row, col, color) {
     let moves = [];
     let direction = (color === "white") ? -1 : 1;
-
+    
+    // Single step forward
     if (isInBounds(row + direction, col) && isEmptySquare(row + direction, col)) {
         moves.push({ row: row + direction, col: col });
+    }
+    
+    // Double step from starting position
+    if ((color === "white" && row === 6) || (color === "black" && row === 1)) {
+        if (isInBounds(row + 2 * direction, col) && isEmptySquare(row + 2 * direction, col)) {
+            moves.push({ row: row + 2 * direction, col: col });
+        }
+    }
+    
+    // Diagonal capture
+    if (isInBounds(row + direction, col - 1) && isOpponentPiece(row + direction, col - 1, color)) {
+        moves.push({ row: row + direction, col: col - 1 });
+    }
+    if (isInBounds(row + direction, col + 1) && isOpponentPiece(row + direction, col + 1, color)) {
+        moves.push({ row: row + direction, col: col + 1 });
     }
 
     return moves;
 }
+
+// ROOK MOVEMENT
+function calculateRookMoves(row, col) {
+    let moves = [];
+
+    // Horizontal and vertical movements
+    for (let i = -1; i <= 1; i += 2) {
+        // Vertical movement
+        for (let r = row + i; isInBounds(r, col) && isEmptySquare(r, col); r += i) {
+            moves.push({ row: r, col: col });
+        }
+        if (isInBounds(row + i, col) && isOpponentPiece(row + i, col, turn)) {
+            moves.push({ row: row + i, col: col });
+        }
+
+        // Horizontal movement
+        for (let c = col + i; isInBounds(row, c) && isEmptySquare(row, c); c += i) {
+            moves.push({ row: row, col: c });
+        }
+        if (isInBounds(row, col + i) && isOpponentPiece(row, col + i, turn)) {
+            moves.push({ row: row, col: col + i });
+        }
+    }
+
+    return moves;
+}
+
+// KNIGHT MOVEMENT
+function calculateKnightMoves(row, col) {
+    let moves = [];
+    const knightMoves = [
+        { row: row + 2, col: col + 1 }, { row: row + 2, col: col - 1 },
+        { row: row - 2, col: col + 1 }, { row: row - 2, col: col - 1 },
+        { row: row + 1, col: col + 2 }, { row: row + 1, col: col - 2 },
+        { row: row - 1, col: col + 2 }, { row: row - 1, col: col - 2 }
+    ];
+
+    knightMoves.forEach(move => {
+        if (isInBounds(move.row, move.col) && (isEmptySquare(move.row, move.col) || isOpponentPiece(move.row, move.col, turn))) {
+            moves.push(move);
+        }
+    });
+
+    return moves;
+}
+
+// BISHOP MOVEMENT
+function calculateBishopMoves(row, col) {
+    let moves = [];
+
+    // Diagonal movements
+    for (let i = -1; i <= 1; i += 2) {
+        for (let j = -1; j <= 1; j += 2) {
+            let r = row + i, c = col + j;
+            while (isInBounds(r, c) && isEmptySquare(r, c)) {
+                moves.push({ row: r, col: c });
+                r += i;
+                c += j;
+            }
+            if (isInBounds(r, c) && isOpponentPiece(r, c, turn)) {
+                moves.push({ row: r, col: c });
+            }
+        }
+    }
+
+    return moves;
+}
+
+// QUEEN MOVEMENT (Combination of Rook + Bishop)
+function calculateQueenMoves(row, col) {
+    return [...calculateRookMoves(row, col), ...calculateBishopMoves(row, col)];
+}
+
+// KING MOVEMENT
+function calculateKingMoves(row, col) {
+    let moves = [];
+    const kingMoves = [
+        { row: row + 1, col: col }, { row: row - 1, col: col },
+        { row: row, col: col + 1 }, { row: row, col: col - 1 },
+        { row: row + 1, col: col + 1 }, { row: row + 1, col: col - 1 },
+        { row: row - 1, col: col + 1 }, { row: row - 1, col: col - 1 }
+    ];
+
+    kingMoves.forEach(move => {
+        if (isInBounds(move.row, move.col) && (isEmptySquare(move.row, move.col) || isOpponentPiece(move.row, move.col, turn))) {
+            moves.push(move);
+        }
+    });
+
+    return moves;
+}
+
+// Helper functions
 
 function isInBounds(row, col) {
     return row >= 0 && row < 8 && col >= 0 && col < 8;
@@ -173,22 +328,55 @@ function isEmptySquare(row, col) {
     return !getSquare(row, col).querySelector('.piece');
 }
 
-function wouldCauseCheck(move) {
-    // Check if a move would leave the player's king in check
-    // Placeholder logic; implement check detection here
-    return false;
+function isOpponentPiece(row, col, color) {
+    const piece = getSquare(row, col).querySelector('.piece');
+    if (!piece) return false;
+
+    const pieceColor = getPieceColor(piece.innerHTML);
+    return pieceColor !== color;
 }
 
-function isCheckmate() {
-    // Placeholder logic for checkmate detection
-    return false;
+function getPieceColor(piece) {
+    return ["♙", "♖", "♘", "♗", "♕", "♔"].includes(piece) ? "white" : "black";
 }
 
-function isStalemate() {
-    // Placeholder logic for stalemate detection
-    return false;
+function getSquare(row, col) {
+    return board.querySelector(`.square[data-row="${row}"][data-col="${col}"]`);
+}
+
+
+function resetTimers() {
+    if (intervalId) {
+        clearInterval(intervalId);
+    }
+    intervalId = setInterval(updateTimers, 1000);
+}
+
+function updateTimers() {
+    if (turn === "white") {
+        whiteTime--;
+        if (whiteTime === 0) {
+            alert("White time is up! Black wins.");
+            clearInterval(intervalId);
+        }
+    } else {
+        blackTime--;
+        if (blackTime === 0) {
+            alert("Black time is up! White wins.");
+            clearInterval(intervalId);
+        }
+    }
+
+    document.getElementById("status").innerText = `Turn: ${turn} | White: ${formatTime(whiteTime)} | Black: ${formatTime(blackTime)}`;
+}
+
+function formatTime(time) {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 }
 
 // Initialize the chessboard
 createChessBoard();
 switchTurn();
+
