@@ -57,3 +57,8 @@ h1 {
     font-size: 36px;
     cursor: pointer;
 }
+/* Highlight valid move squares */
+.square.highlight {
+    background-color: rgba(0, 255, 0, 0.5); /* Light green color for valid moves */
+}
+
