@@ -375,6 +375,98 @@ function formatTime(time) {
     const seconds = time % 60;
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 }
+function wouldCauseCheck(move) {
+    const simulatedBoard = copyBoardState(); // Simulate the current board state
+
+    // Temporarily move the piece on the simulated board
+    const { row, col } = move;
+    const tempPiece = simulatedBoard[selectedSquare.dataset.row][selectedSquare.dataset.col];
+    simulatedBoard[row][col] = tempPiece;
+    simulatedBoard[selectedSquare.dataset.row][selectedSquare.dataset.col] = "";
+
+    // Find the king's position after the move
+    const kingPosition = (turn === "white") ? whiteKingPosition : blackKingPosition;
+    const kingRow = (tempPiece === "♔") ? row : kingPosition.row;
+    const kingCol = (tempPiece === "♔") ? col : kingPosition.col;
+
+    // Check if the king would be in check after this move
+    const isInCheck = isKingInCheck(simulatedBoard, kingRow, kingCol, turn);
+
+    return isInCheck;
+}
+
+// Helper function to check if the king is in check
+function isKingInCheck(board, kingRow, kingCol, color) {
+    const opponentColor = (color === "white") ? "black" : "white";
+
+    // Iterate over all squares to see if any opponent piece can attack the king
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const piece = board[r][c];
+            if (piece && getPieceColor(piece) === opponentColor) {
+                const opponentMoves = calculateValidMovesForSimulation(board, r, c);
+                if (opponentMoves.some(move => move.row === kingRow && move.col === kingCol)) {
+                    return true; // King is under attack
+                }
+            }
+        }
+    }
+    return false;
+}
+
+// Helper function to calculate valid moves in a simulated board state (no recursion)
+function calculateValidMovesForSimulation(board, row, col) {
+    const piece = board[row][col];
+    let moves = [];
+
+    // Implement simplified move calculation for simulation
+    switch (piece) {
+        case "♙":
+            moves = calculatePawnMoves(row, col, "white");
+            break;
+        case "♟":
+            moves = calculatePawnMoves(row, col, "black");
+            break;
+        case "♖":
+        case "♜":
+            moves = calculateRookMoves(row, col);
+            break;
+        case "♘":
+        case "♞":
+            moves = calculateKnightMoves(row, col);
+            break;
+        case "♗":
+        case "♝":
+            moves = calculateBishopMoves(row, col);
+            break;
+        case "♕":
+        case "♛":
+            moves = calculateQueenMoves(row, col);
+            break;
+        case "♔":
+        case "♚":
+            moves = calculateKingMoves(row, col);
+            break;
+    }
+
+    return moves;
+}
+
+// Helper function to copy the current board state for simulation
+function copyBoardState() {
+    const boardCopy = [];
+    const squares = document.querySelectorAll('.square');
+    for (let i = 0; i < 8; i++) {
+        const row = [];
+        for (let j = 0; j < 8; j++) {
+            const square = getSquare(i, j);
+            const piece = square.querySelector('.piece') ? square.querySelector('.piece').innerHTML : "";
+            row.push(piece);
+        }
+        boardCopy.push(row);
+    }
+    return boardCopy;
+}
 
 // Initialize the chessboard
 createChessBoard();
