@@ -196,6 +196,18 @@ function calculateValidMoves(square) {
 
     return moves.filter(move => !wouldCauseCheck(move));
 }
+function highlightValidMoves(moves) {
+    // Clear any existing highlights
+    document.querySelectorAll('.square').forEach(square => {
+        square.classList.remove('highlight');
+    });
+
+    // Highlight the valid move squares
+    moves.forEach(move => {
+        const square = getSquare(move.row, move.col);
+        square.classList.add('highlight');
+    });
+}
 
 // Piece movement logic functions
 
@@ -375,12 +387,20 @@ function formatTime(time) {
     const seconds = time % 60;
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 }
+
 function wouldCauseCheck(move) {
+    // Ensure selectedSquare is not null
+    if (!selectedSquare) return false;
+
     const simulatedBoard = copyBoardState(); // Simulate the current board state
 
     // Temporarily move the piece on the simulated board
     const { row, col } = move;
     const tempPiece = simulatedBoard[selectedSquare.dataset.row][selectedSquare.dataset.col];
+    
+    // Make sure tempPiece exists (in case no piece is selected)
+    if (!tempPiece) return false;
+
     simulatedBoard[row][col] = tempPiece;
     simulatedBoard[selectedSquare.dataset.row][selectedSquare.dataset.col] = "";
 
@@ -394,6 +414,7 @@ function wouldCauseCheck(move) {
 
     return isInCheck;
 }
+
 
 // Helper function to check if the king is in check
 function isKingInCheck(board, kingRow, kingCol, color) {
