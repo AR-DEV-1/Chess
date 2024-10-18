@@ -468,11 +468,10 @@ function movePiece(row, col) {
         // Check for game-ending conditions
         if (isCheckmate()) {
             statusDisplay.innerText = `Checkmate! ${turn === 'white' ? 'Black' : 'White'} wins!`;
-            clearInterval(intervalId); // Stop the timer on game over
         } else if (isStalemate()) {
             statusDisplay.innerText = "Stalemate! It's a draw.";
-            clearInterval(intervalId); // Stop the timer on game over
         } else {
+            // Switch the turn if no game-ending condition
             switchTurn();
         }
     }
