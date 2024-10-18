@@ -477,3 +477,16 @@ function movePiece(row, col) {
         }
     }
 }
+
+function switchTurn() {
+    // Toggle the turn between white and black
+    turn = (turn === "white") ? "black" : "white";
+    
+    // Update the game status to reflect the current player's turn
+    statusDisplay.innerText = `Turn: ${turn}`;
+
+    // If it's black's turn and you have an AI for black, handle the AI move
+    if (turn === "black") {
+        setTimeout(aiMove, 500); // Simulate AI move with a small delay
+    }
+}
