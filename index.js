@@ -42,7 +42,6 @@ function createChessBoard() {
             board.appendChild(square);
         }
     }
-    updateTimers();
 }
 
 function handleSquareClick(event) {
@@ -85,40 +84,9 @@ function deselectPiece() {
     selectedSquare = null;
 }
 
-function movePiece(row, col) {
-    if (selectedPiece) {
-        const targetSquare = getSquare(row, col);
-        const piece = selectedPiece.innerHTML;
-
-        // Move the piece on the board
-        targetSquare.innerHTML = `<span class="piece">${piece}</span>`;
-        selectedSquare.innerHTML = ''; // Clear the original square
-
-        // Update king position if necessary
-        if (piece === "♔") whiteKingPosition = { row, col };
-        if (piece === "♚") blackKingPosition = { row, col };
-
-        deselectPiece();
-
-        // Check for game-ending conditions
-        if (isCheckmate()) {
-            statusDisplay.innerText = `Checkmate! ${turn === 'white' ? 'Black' : 'White'} wins!`;
-            clearInterval(intervalId); // Stop the timer on game over
-        } else if (isStalemate()) {
-            statusDisplay.innerText = "Stalemate! It's a draw.";
-            clearInterval(intervalId); // Stop the timer on game over
-        } else {
-            switchTurn();
-        }
-    }
-}
-
 function switchTurn() {
     turn = (turn === "white") ? "black" : "white";
     statusDisplay.innerText = `Turn: ${turn}`;
-    
-    // Reset the timer when the turn switches
-    resetTimers();
 
     if (turn === "black") {
         // AI makes a move
@@ -482,3 +450,30 @@ function copyBoardState() {
 createChessBoard();
 switchTurn();
 
+function movePiece(row, col) {
+    if (selectedPiece) {
+        const targetSquare = getSquare(row, col);
+        const piece = selectedPiece.innerHTML;
+
+        // Move the piece on the board
+        targetSquare.innerHTML = `<span class="piece">${piece}</span>`;
+        selectedSquare.innerHTML = ''; // Clear the original square
+
+        // Update king position if necessary
+        if (piece === "♔") whiteKingPosition = { row, col };
+        if (piece === "♚") blackKingPosition = { row, col };
+
+        deselectPiece();
+
+        // Check for game-ending conditions
+        if (isCheckmate()) {
+            statusDisplay.innerText = `Checkmate! ${turn === 'white' ? 'Black' : 'White'} wins!`;
+            clearInterval(intervalId); // Stop the timer on game over
+        } else if (isStalemate()) {
+            statusDisplay.innerText = "Stalemate! It's a draw.";
+            clearInterval(intervalId); // Stop the timer on game over
+        } else {
+            switchTurn();
+        }
+    }
+}
