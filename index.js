@@ -1,7 +1,4 @@
-// Variables for timers
-let whiteTime = 300; // 5 minutes
-let blackTime = 300;
-let intervalId;
+
 
 const board = document.getElementById("chess-board");
 const statusDisplay = document.getElementById("status");
@@ -362,36 +359,22 @@ function getSquare(row, col) {
     return board.querySelector(`.square[data-row="${row}"][data-col="${col}"]`);
 }
 
+// Get all possible moves
+function isCheckmate() {
+    const allMoves = getAllPossibleMoves(turn);
 
-function resetTimers() {
-    if (intervalId) {
-        clearInterval(intervalId);
-    }
-    intervalId = setInterval(updateTimers, 1000);
-}
+    // If the current player has no valid moves
+    if (allMoves.length === 0) {
+        // Check if the player is in check
+        const kingPosition = (turn === "white") ? whiteKingPosition : blackKingPosition;
+        const inCheck = isKingInCheck(copyBoardState(), kingPosition.row, kingPosition.col, turn);
 
-function updateTimers() {
-    if (turn === "white") {
-        whiteTime--;
-        if (whiteTime === 0) {
-            alert("White time is up! Black wins.");
-            clearInterval(intervalId);
-        }
-    } else {
-        blackTime--;
-        if (blackTime === 0) {
-            alert("Black time is up! White wins.");
-            clearInterval(intervalId);
+        if (inCheck) {
+            return true; // It's checkmate
         }
     }
 
-    document.getElementById("status").innerText = `Turn: ${turn} | White: ${formatTime(whiteTime)} | Black: ${formatTime(blackTime)}`;
-}
-
-function formatTime(time) {
-    const minutes = Math.floor(time / 60);
-    const seconds = time % 60;
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    return false; // Not checkmate
 }
 
 function wouldCauseCheck(move) {
