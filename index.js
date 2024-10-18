@@ -208,6 +208,12 @@ function highlightValidMoves(moves) {
         square.classList.add('highlight');
     });
 }
+function clearValidMoveHighlights() {
+    const highlightedSquares = document.querySelectorAll('.highlight');
+    highlightedSquares.forEach(square => {
+        square.classList.remove('highlight');
+    });
+}
 
 // Piece movement logic functions
 
